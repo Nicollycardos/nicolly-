@@ -1,0 +1,349 @@
+import fs from 'fs';
+import path from 'path';
+import { ERPDatabase, RawMaterial, Product, Contact, WorkcenterCapacity, CustomerOrder, ProductionOrder } from '../src/types/erp.js';
+
+const DATA_DIR = path.resolve(process.cwd(), 'data');
+const DB_FILE = path.join(DATA_DIR, 'database.json');
+
+const INITIAL_DATABASE: ERPDatabase = {
+  rawMaterials: [
+    {
+      id: 'mp-1',
+      code: 'MP-001',
+      name: 'Madeira Maciça Cedro Rosa (Tábua 20mm)',
+      unit: 'm²',
+      currentStock: 45.5,
+      minimumStock: 15.0,
+      unitCost: 110.00,
+      supplierId: 'cont-sup-1',
+      notes: 'Umidade controlada < 12%'
+    },
+    {
+      id: 'mp-2',
+      code: 'MP-002',
+      name: 'Tubo de Aço Carbono 20x20mm (Barra 6m)',
+      unit: 'm',
+      currentStock: 78.0,
+      minimumStock: 30.0,
+      unitCost: 18.50,
+      supplierId: 'cont-sup-2',
+      notes: 'Espessura de parede 1.5mm'
+    },
+    {
+      id: 'mp-3',
+      code: 'MP-003',
+      name: 'Verniz Poliuretano Fosco Alta Resistência',
+      unit: 'L',
+      currentStock: 6.2,
+      minimumStock: 8.0, // Alerta de estoque baixo!
+      unitCost: 65.00,
+      supplierId: 'cont-sup-3',
+      notes: 'Rendimento aprox 10m²/L'
+    },
+    {
+      id: 'mp-4',
+      code: 'MP-004',
+      name: 'Parafuso Estrutural Allen M6x40mm',
+      unit: 'un',
+      currentStock: 320,
+      minimumStock: 100,
+      unitCost: 0.85,
+      supplierId: 'cont-sup-2',
+      notes: 'Acompanha arruela de pressão'
+    },
+    {
+      id: 'mp-5',
+      code: 'MP-005',
+      name: 'Tinta Eletrostática Preto Fosco',
+      unit: 'kg',
+      currentStock: 14.0,
+      minimumStock: 5.0,
+      unitCost: 42.00,
+      supplierId: 'cont-sup-3',
+      notes: 'Para pintura de estruturas metálicas'
+    },
+    {
+      id: 'mp-6',
+      code: 'MP-006',
+      name: 'Sapatas Niveladoras de Borracha',
+      unit: 'un',
+      currentStock: 18,
+      minimumStock: 40, // Alerta de estoque baixo!
+      unitCost: 3.20,
+      supplierId: 'cont-sup-2',
+      notes: 'Rosca 1/4 para acabamento de bases'
+    }
+  ],
+  products: [
+    {
+      id: 'prd-1',
+      code: 'PRD-001',
+      name: 'Mesa Industrial Noronha 140x80cm',
+      description: 'Mesa com tampo de madeira maciça de cedro e estrutura em aço preto fosco.',
+      category: 'Mesas',
+      unit: 'un',
+      processTimeMinutes: 180, // 3 horas por unidade
+      primaryWorkcenterId: 'maq-1',
+      suggestedSalePrice: 1250.00,
+      currentFinishedStock: 2,
+      bom: [
+        { rawMaterialId: 'mp-1', quantityNeeded: 1.4, notes: 'Tampo laminado e bisotado' },
+        { rawMaterialId: 'mp-2', quantityNeeded: 8.5, notes: 'Estrutura dos pés e travessas' },
+        { rawMaterialId: 'mp-3', quantityNeeded: 0.35, notes: '2 demãos no tampo' },
+        { rawMaterialId: 'mp-4', quantityNeeded: 12, notes: 'Fixação tampo à base' },
+        { rawMaterialId: 'mp-5', quantityNeeded: 0.8, notes: 'Pintura da base' },
+        { rawMaterialId: 'mp-6', quantityNeeded: 4, notes: '4 sapatas por mesa' }
+      ]
+    },
+    {
+      id: 'prd-2',
+      code: 'PRD-002',
+      name: 'Banqueta Alta Oslo para Balcão',
+      description: 'Banqueta alta reforçada com assento em cedro e apoio para pés em aço.',
+      category: 'Assentos',
+      unit: 'un',
+      processTimeMinutes: 75, // 1h15 por unidade
+      primaryWorkcenterId: 'maq-2',
+      suggestedSalePrice: 380.00,
+      currentFinishedStock: 6,
+      bom: [
+        { rawMaterialId: 'mp-1', quantityNeeded: 0.3, notes: 'Assento 35x35cm' },
+        { rawMaterialId: 'mp-2', quantityNeeded: 4.2, notes: 'Pés e aro de apoio' },
+        { rawMaterialId: 'mp-3', quantityNeeded: 0.1, notes: 'Selamento do assento' },
+        { rawMaterialId: 'mp-4', quantityNeeded: 4, notes: 'Fixação' },
+        { rawMaterialId: 'mp-5', quantityNeeded: 0.4, notes: 'Pintura' },
+        { rawMaterialId: 'mp-6', quantityNeeded: 4, notes: 'Sapatas plásticas/borracha' }
+      ]
+    },
+    {
+      id: 'prd-3',
+      code: 'PRD-003',
+      name: 'Prateleira Suspensa Estilo Loft 100cm',
+      description: 'Prateleira de parede com suporte tubular geométrico.',
+      category: 'Estantes & Nichos',
+      unit: 'un',
+      processTimeMinutes: 45, // 45 min
+      primaryWorkcenterId: 'maq-1',
+      suggestedSalePrice: 210.00,
+      currentFinishedStock: 8,
+      bom: [
+        { rawMaterialId: 'mp-1', quantityNeeded: 0.4, notes: 'Prancha aparelhada' },
+        { rawMaterialId: 'mp-2', quantityNeeded: 2.2, notes: 'Suportes laterais' },
+        { rawMaterialId: 'mp-3', quantityNeeded: 0.12, notes: 'Verniz' },
+        { rawMaterialId: 'mp-4', quantityNeeded: 6, notes: 'Parafusos' },
+        { rawMaterialId: 'mp-5', quantityNeeded: 0.25, notes: 'Pintura' }
+      ]
+    }
+  ],
+  contacts: [
+    {
+      id: 'cont-cli-1',
+      name: 'Café & Bistrô Santa Luzia Ltda',
+      type: 'cliente',
+      document: '28.451.980/0001-32',
+      email: 'contato@cafesantaluzia.com.br',
+      phone: '(11) 98765-4321',
+      city: 'São Paulo - SP',
+      address: 'Rua das Flores, 420 - Pinheiros',
+      notes: 'Cliente recorrente de banquetas e mesas para área externa coberta'
+    },
+    {
+      id: 'cont-cli-2',
+      name: 'Studio Arquitetura & Interiores',
+      type: 'cliente',
+      document: '41.890.123/0001-09',
+      email: 'projetos@studiointeriores.com.br',
+      phone: '(11) 97123-9988',
+      city: 'Campinas - SP',
+      address: 'Av. Brasil, 1500 - Sala 402',
+      notes: 'Especificam nossos móveis em projetos residenciais'
+    },
+    {
+      id: 'cont-sup-1',
+      name: 'Madeireira Cedro Forte Eireli',
+      type: 'fornecedor',
+      document: '12.345.678/0001-90',
+      email: 'vendas@cedroforte.com.br',
+      phone: '(19) 3456-7890',
+      city: 'Piracicaba - SP',
+      address: 'Rodovia SP-304, km 140',
+      notes: 'Prazo médio de entrega de madeira: 3 dias úteis'
+    },
+    {
+      id: 'cont-sup-2',
+      name: 'Siderúrgica & Tubos União',
+      type: 'fornecedor',
+      document: '03.882.114/0001-55',
+      email: 'comercial@tubosuniao.com.br',
+      phone: '(11) 4002-8922',
+      city: 'Guarulhos - SP',
+      address: 'Av. Industrial, 880',
+      notes: 'Fornece tubos de aço e parafusos estruturais'
+    },
+    {
+      id: 'cont-sup-3',
+      name: 'Distribuidora Química & Tintas Express',
+      type: 'fornecedor',
+      document: '08.991.432/0001-77',
+      email: 'pedidos@tintasexpress.com.br',
+      phone: '(11) 3321-7744',
+      city: 'São Bernardo do Campo - SP',
+      address: 'Rua dos Químicos, 105',
+      notes: 'Vernizes industriais e tintas eletrostáticas'
+    }
+  ],
+  capacities: [
+    {
+      id: 'maq-1',
+      code: 'POSTO-01',
+      name: 'Corte de Madeira e Aparelhamento',
+      capacityPerDay: 8, // 8 horas disponíveis por dia
+      capacityUnit: 'horas/dia',
+      status: 'operacional',
+      operatorCount: 2,
+      notes: 'Serra esquadrejadeira e desempenadeira. Turno das 08h às 17h.'
+    },
+    {
+      id: 'maq-2',
+      code: 'POSTO-02',
+      name: 'Serralheria, Solda e Corte de Aço',
+      capacityPerDay: 8,
+      capacityUnit: 'horas/dia',
+      status: 'operacional',
+      operatorCount: 1,
+      notes: 'Serra fita e máquina de solda MIG.'
+    },
+    {
+      id: 'maq-3',
+      code: 'POSTO-03',
+      name: 'Cabine de Pintura e Lixamento',
+      capacityPerDay: 7,
+      capacityUnit: 'horas/dia',
+      status: 'operacional',
+      operatorCount: 1,
+      notes: 'Secagem e cura térmica.'
+    },
+    {
+      id: 'maq-4',
+      code: 'POSTO-04',
+      name: 'Bancada de Montagem e Embalagem Final',
+      capacityPerDay: 8,
+      capacityUnit: 'horas/dia',
+      status: 'operacional',
+      operatorCount: 2,
+      notes: 'Revisão de qualidade e fixação de sapatas e parafusos.'
+    }
+  ],
+  orders: [
+    {
+      id: 'ped-1',
+      orderNumber: 'PED-101',
+      clientId: 'cont-cli-1',
+      items: [
+        { productId: 'prd-2', quantity: 8, unitPrice: 380.00 },
+        { productId: 'prd-1', quantity: 2, unitPrice: 1250.00 }
+      ],
+      orderDate: '2026-10-18',
+      deliveryDeadline: '2026-10-30',
+      status: 'em_producao',
+      totalAmount: 5540.00,
+      notes: 'Entrega única para inauguração da filial'
+    },
+    {
+      id: 'ped-2',
+      orderNumber: 'PED-102',
+      clientId: 'cont-cli-2',
+      items: [
+        { productId: 'prd-3', quantity: 4, unitPrice: 210.00 }
+      ],
+      orderDate: '2026-10-21',
+      deliveryDeadline: '2026-11-05',
+      status: 'pendente',
+      totalAmount: 840.00,
+      notes: 'Aguardando validação da data final com arquiteta'
+    }
+  ],
+  productionOrders: [
+    {
+      id: 'op-1',
+      code: 'OP-2401',
+      sourceType: 'pedido',
+      orderId: 'ped-1',
+      productId: 'prd-2',
+      quantity: 8,
+      startDate: '2026-10-20',
+      deadlineDate: '2026-10-28',
+      status: 'em_producao',
+      processTimeTotalMinutes: 600, // 8 x 75 min = 10 horas
+      workcenterId: 'maq-2',
+      stockDeducted: true,
+      notes: 'Banquetas do pedido PED-101. Solda estrutural concluída, em lixamento.',
+      createdAt: '2026-10-20T08:30:00.000Z',
+      updatedAt: '2026-10-22T09:00:00.000Z'
+    },
+    {
+      id: 'op-2',
+      code: 'OP-2402',
+      sourceType: 'pedido',
+      orderId: 'ped-1',
+      productId: 'prd-1',
+      quantity: 2,
+      startDate: '2026-10-22',
+      deadlineDate: '2026-10-29',
+      status: 'aguardando',
+      processTimeTotalMinutes: 360, // 2 x 180 min = 6 horas
+      workcenterId: 'maq-1',
+      stockDeducted: false,
+      notes: 'Mesas Noronha do pedido PED-101. Fazer após corte do lote de cedro.',
+      createdAt: '2026-10-22T08:00:00.000Z',
+      updatedAt: '2026-10-22T08:00:00.000Z'
+    }
+  ]
+};
+
+// Helper: assegurar que o diretório exista
+function ensureDataDir(): void {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+}
+
+// Carregar ou inicializar o banco de dados em arquivo JSON
+export function getDatabase(): ERPDatabase {
+  ensureDataDir();
+  if (!fs.existsSync(DB_FILE)) {
+    saveDatabase(INITIAL_DATABASE);
+    return JSON.parse(JSON.stringify(INITIAL_DATABASE));
+  }
+
+  try {
+    const raw = fs.readFileSync(DB_FILE, 'utf-8');
+    const data = JSON.parse(raw);
+    return {
+      rawMaterials: data.rawMaterials || [],
+      products: data.products || [],
+      contacts: data.contacts || [],
+      capacities: data.capacities || [],
+      orders: data.orders || [],
+      productionOrders: data.productionOrders || []
+    };
+  } catch (error) {
+    console.error('Erro ao ler database.json, restaurando estado inicial:', error);
+    saveDatabase(INITIAL_DATABASE);
+    return JSON.parse(JSON.stringify(INITIAL_DATABASE));
+  }
+}
+
+// Salvar estado no arquivo com escrita atômica
+export function saveDatabase(data: ERPDatabase): void {
+  ensureDataDir();
+  const tempPath = `${DB_FILE}.tmp`;
+  fs.writeFileSync(tempPath, JSON.stringify(data, null, 2), 'utf-8');
+  fs.renameSync(tempPath, DB_FILE);
+}
+
+// Resetar para dados padrão
+export function resetToSeedDatabase(): ERPDatabase {
+  saveDatabase(INITIAL_DATABASE);
+  return JSON.parse(JSON.stringify(INITIAL_DATABASE));
+}

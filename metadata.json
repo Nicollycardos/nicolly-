@@ -1,0 +1,6 @@
+{
+  "name": "PlanoERP - PCP & Gestão de Produção",
+  "description": "Sistema simplificado de planejamento e controle da produção (PCP) e ERP para pequenas indústrias e negócios com ficha técnica (BOM), estoque de matéria-prima, capacidade produtiva e ordens de produção.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
