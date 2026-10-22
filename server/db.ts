@@ -2,7 +2,9 @@ import fs from 'fs';
 import path from 'path';
 import { ERPDatabase, RawMaterial, Product, Contact, WorkcenterCapacity, CustomerOrder, ProductionOrder } from '../src/types/erp.js';
 
-const DATA_DIR = path.resolve(process.cwd(), 'data');
+const DATA_DIR = process.env.VERCEL
+  ? path.join('/tmp', 'data')
+  : path.resolve(process.cwd(), 'data');
 const DB_FILE = path.join(DATA_DIR, 'database.json');
 
 const INITIAL_DATABASE: ERPDatabase = {
